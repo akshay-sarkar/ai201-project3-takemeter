@@ -2,6 +2,8 @@
 
 A fine-tuned text classifier that evaluates discourse quality in investment communities on Reddit. Given a post or comment, TakeMeter predicts one of three labels: `analysis`, `speculation`, or `reaction`.
 
+Video Demo: https://drive.google.com/file/d/1HxJ08Zakl5qpvGOni04h3mKLXhQjQ5uU/view?usp=share_link
+
 ---
 
 ## Community Choice

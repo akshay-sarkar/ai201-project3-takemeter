@@ -1,0 +1,129 @@
+{
+  "fine_tuned_model": {
+    "base_model": "distilbert-base-uncased",
+    "overall_accuracy": 0.9394,
+    "per_class_metrics": {
+      "analysis": {
+        "precision": 0.8667,
+        "recall": 1.0,
+        "f1": 0.9286,
+        "support": 13
+      },
+      "speculation": {
+        "precision": 1.0,
+        "recall": 0.9091,
+        "f1": 0.9524,
+        "support": 11
+      },
+      "reaction": {
+        "precision": 1.0,
+        "recall": 0.8889,
+        "f1": 0.9412,
+        "support": 9
+      }
+    },
+    "confusion_matrix": [
+      [
+        13,
+        0,
+        0
+      ],
+      [
+        1,
+        10,
+        0
+      ],
+      [
+        1,
+        0,
+        8
+      ]
+    ],
+    "wrong_predictions": [
+      {
+        "text": "Anthropic has updated its website to warn that any sale or transfer of its stock without company approval may be considered void. That's pretty interesting given how much demand there is for private AI shares right now. The risks are real: 1. You may not actually own what you think you own 2. The transfer could be blocked or voided 3. Valuations may be inflated by AI hype",
+        "true_label": "reaction",
+        "predicted_label": "analysis",
+        "confidence": 0.4581
+      },
+      {
+        "text": "$REPX trades at PDP liquidation value (~$34) despite 30% production growth in 2025, 25% guided for 2026, 147 MMBoe reserves, 1.0x leverage, and $100M buyback authorised. Base case intrinsic value $44-48. Bull case $56-61. Biggest risk is commodity price this is an oil call, not a bond.",
+        "true_label": "speculation",
+        "predicted_label": "analysis",
+        "confidence": 0.4975
+      }
+    ],
+    "sample_classifications": [
+      {
+        "text": "Got about $28k of my $120k portfolio sitting in Generac right now. Q1 2026 results: Revenue grew 12% to $1.06 billion. Adjusted EPS $1.80 vs consensus $1.33. C&I segment grew 28% YoY.",
+        "true_label": "analysis",
+        "predicted_label": "analysis",
+        "confidence": 0.5254,
+        "correct": true
+      },
+      {
+        "text": "Quantum computing is still highly speculative, but IonQ's trapped-ion technology operates at room temperature, giving it a massive scalability advantage. They are hitting their algorithmic qubit milestones ahead of schedule.",
+        "true_label": "speculation",
+        "predicted_label": "speculation",
+        "confidence": 0.464,
+        "correct": true
+      },
+      {
+        "text": "It hasn't just been today; it's been a non-stop, daily bleeding for three straight weeks. Every single bounce gets aggressively sold into by institutions. I have lost half of my total net worth in less than a month.",
+        "true_label": "reaction",
+        "predicted_label": "reaction",
+        "confidence": 0.5262,
+        "correct": true
+      },
+      {
+        "text": "Anthropic has updated its website to warn that any sale or transfer of its stock without company approval may be considered void. To me, this looks like a sign that private AI stock demand is getting very heated.",
+        "true_label": "reaction",
+        "predicted_label": "analysis",
+        "confidence": 0.4581,
+        "correct": false
+      }
+    ]
+  },
+  "baseline_model": {
+    "model": "groq/llama-3.3-70b-versatile",
+    "overall_accuracy": 0.8182,
+    "per_class_metrics": {
+      "analysis": {
+        "precision": 0.7222,
+        "recall": 1.0,
+        "f1": 0.8387,
+        "support": 13
+      },
+      "speculation": {
+        "precision": 0.8571,
+        "recall": 0.5455,
+        "f1": 0.6667,
+        "support": 11
+      },
+      "reaction": {
+        "precision": 1.0,
+        "recall": 0.8889,
+        "f1": 0.9412,
+        "support": 9
+      }
+    },
+    "evaluated_examples": 33,
+    "unparseable": 0
+  },
+  "dataset": {
+    "total": 215,
+    "train": 150,
+    "val": 32,
+    "test": 33,
+    "label_distribution": {
+      "analysis": 87,
+      "speculation": 69,
+      "reaction": 59
+    }
+  },
+  "training": {
+    "epochs": 3,
+    "learning_rate": 2e-05,
+    "batch_size": 16
+  }
+}

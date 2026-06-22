@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TakeMeter — Investment Post Classifier</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f9f9f7; color: #1a1a18; min-height: 100vh; display: flex; justify-content: center; padding: 2rem 1rem; }
+  .container { width: 100%; max-width: 680px; }
+  h1 { font-size: 20px; font-weight: 500; margin-bottom: 4px; }
+  .sub { font-size: 14px; color: #666; margin-bottom: 1.5rem; }
+  .api-setup { background: #fff; border: 0.5px solid #e0e0db; border-radius: 10px; padding: 14px 16px; margin-bottom: 1.5rem; }
+  .api-setup label { font-size: 13px; color: #555; display: block; margin-bottom: 6px; }
+  .api-setup input { width: 100%; padding: 8px 10px; font-size: 13px; border: 0.5px solid #ccc; border-radius: 6px; font-family: monospace; background: #fafaf8; color: #1a1a18; }
+  .api-setup input:focus { outline: none; border-color: #888; }
+  .api-note { font-size: 11px; color: #888; margin-top: 5px; }
+  textarea { width: 100%; min-height: 140px; font-size: 14px; font-family: inherit; padding: 12px; border: 0.5px solid #ccc; border-radius: 8px; resize: vertical; background: #fff; color: #1a1a18; }
+  textarea:focus { outline: none; border-color: #888; }
+  .row { display: flex; gap: 8px; margin-top: 8px; align-items: center; }
+  button { padding: 8px 18px; font-size: 14px; font-weight: 500; border-radius: 8px; cursor: pointer; background: #fff; color: #1a1a18; border: 0.5px solid #ccc; }
+  button:hover { background: #f5f5f3; }
+  button.primary { background: #1a1a18; color: #fff; border-color: #1a1a18; }
+  button.primary:hover { opacity: 0.85; }
+  button:disabled { opacity: 0.45; cursor: not-allowed; }
+  .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; align-items: center; }
+  .chip { font-size: 12px; padding: 4px 10px; border-radius: 20px; border: 0.5px solid #ddd; background: #f5f5f3; color: #555; cursor: pointer; }
+  .chip:hover { border-color: #aaa; color: #1a1a18; }
+  .result { margin-top: 1.5rem; border-radius: 12px; border: 0.5px solid #e0e0db; overflow: hidden; background: #fff; }
+  .result-header { padding: 1rem 1.25rem; display: flex; align-items: center; gap: 14px; }
+  .badge { font-size: 13px; font-weight: 500; padding: 5px 14px; border-radius: 20px; white-space: nowrap; }
+  .badge-analysis { background: #EAF3DE; color: #3B6D11; }
+  .badge-speculation { background: #FAEEDA; color: #854F0B; }
+  .badge-reaction { background: #E6F1FB; color: #185FA5; }
+  .conf-wrap { flex: 1; }
+  .conf-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+  .conf-bar-bg { height: 6px; background: #eee; border-radius: 3px; overflow: hidden; }
+  .conf-bar-fill { height: 6px; border-radius: 3px; transition: width 0.4s ease; }
+  .conf-val { font-size: 13px; font-weight: 500; min-width: 42px; text-align: right; }
+  .reasoning { padding: 0 1.25rem 1.25rem; border-top: 0.5px solid #e0e0db; }
+  .reasoning-title { font-size: 11px; color: #888; margin: 12px 0 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+  .reasoning-text { font-size: 13px; color: #333; line-height: 1.6; }
+  .loading { display: flex; align-items: center; gap: 8px; color: #888; font-size: 14px; margin-top: 1.5rem; }
+  .spinner { width: 16px; height: 16px; border: 2px solid #ddd; border-top-color: #888; border-radius: 50%; animation: spin 0.7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .error { margin-top: 1rem; padding: 12px; border-radius: 8px; background: #fef2f2; color: #991b1b; font-size: 13px; line-height: 1.5; }
+  .divider { border: none; border-top: 0.5px solid #e0e0db; margin: 1.5rem 0; }
+  .legend { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .legend-item { border-radius: 8px; border: 0.5px solid #e0e0db; padding: 10px 12px; background: #fff; }
+  .legend-name { font-size: 12px; font-weight: 500; margin-bottom: 3px; }
+  .legend-def { font-size: 11px; color: #666; line-height: 1.5; }
+  @media (max-width: 500px) { .legend { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>⚡ TakeMeter</h1>
+  <p class="sub">Classify any investment post as <strong>analysis</strong>, <strong>speculation</strong>, or <strong>reaction</strong></p>
+
+  <div class="api-setup">
+    <label for="apiKey">Groq API Key</label>
+    <input type="password" id="apiKey" placeholder="gsk_..." autocomplete="off" />
+    <p class="api-note">Get your free key at <a href="https://console.groq.com" target="_blank">console.groq.com</a> — key is used only in your browser, never sent anywhere else</p>
+  </div>
+
+  <textarea id="postInput" placeholder="Paste a Reddit investment post here..."></textarea>
+
+  <div class="row">
+    <button class="primary" id="classifyBtn" onclick="classify()">Classify</button>
+    <button onclick="clearAll()">Clear</button>
+  </div>
+
+  <div class="examples">
+    <span style="font-size:12px;color:#888;align-self:center;">Try:</span>
+    <span class="chip" onclick="loadExample('analysis')">📊 Analysis</span>
+    <span class="chip" onclick="loadExample('speculation')">📈 Speculation</span>
+    <span class="chip" onclick="loadExample('reaction')">😱 Reaction</span>
+  </div>
+
+  <div id="loadingEl" style="display:none;" class="loading">
+    <div class="spinner"></div>
+    <span>Classifying with Groq llama-3.3-70b...</span>
+  </div>
+  <div id="errorEl" style="display:none;" class="error"></div>
+  <div id="resultEl" style="display:none;" class="result"></div>
+
+  <hr class="divider">
+
+  <div class="legend">
+    <div class="legend-item">
+      <p class="legend-name" style="color:#3B6D11;">📊 analysis</p>
+      <p class="legend-def">Structured argument backed by specific verifiable data. Reasoning stands alone.</p>
+    </div>
+    <div class="legend-item">
+      <p class="legend-name" style="color:#854F0B;">📈 speculation</p>
+      <p class="legend-def">Bold prediction with little evidence. Argument collapses without the conclusion.</p>
+    </div>
+    <div class="legend-item">
+      <p class="legend-name" style="color:#185FA5;">😱 reaction</p>
+      <p class="legend-def">Immediate emotional response to a market event. Feeling, not investment case.</p>
+    </div>
+  </div>
+
+  <p style="font-size:11px;color:#aaa;margin-top:1.5rem;text-align:center;">TakeMeter · AI201 Project 3 · Fine-tuned DistilBERT classifier · Interface uses Groq llama-3.3-70b with the same prompt as the zero-shot baseline</p>
+</div>
+
+<script>
+const EXAMPLES = {
+  analysis: `Is UHS undervalued?\n\nI've been looking into UHS stock lately. Trailing P/E = 6.12, price to book = 1.20 (goes to 2.6 if you remove Goodwill from assets), current ratio = 1.05. The business has been growing steadily, and costs seem to be under control, with gross margins increasing. Cash flow is positive (in 2025 FCF is $824M plus $967M of buybacks) and growing. The stock is down because the market is already pricing in potential wage increases mainly due to a shortage of nurses and possible future reductions in payments from the federal government. Those reasons do not seem to me to fully explain a price so low anyway.`,
+  speculation: `PLTR is quietly setting up a structural monopoly in corporate enterprise. Don't skip this.\n\nHear me out. Everyone is looking at tech giants for AI enterprise play, but Palantir is building a moat that can't be crossed. Their Foundry and AIP systems aren't just software; they integrate into the operational bedrock of supply chains and manufacturing. Once a corporation plugs Palantir into their infrastructure, the switching costs are too high. They are sticky. The recent defense contracts are just validation, but commercial expansion is where the explosive growth will hit. I am speculating a massive revenue beat that will catch institutional analysts completely off guard.`,
+  reaction: `Powell just crushed my soul in less than five minutes.\n\nThe second he started talking about higher-for-longer interest rates, the green turned to blood red instantly. The algos just aggressively dumped everything. My portfolio looks like a crime scene. I can't believe how fragile this entire market is to just one guy talking at a podium.`
+};
+
+const PROMPT = `You are a classifier for investment community posts. Classify the following post into exactly one of these three labels:
+
+- analysis: A post that makes a structured investment argument backed by specific, verifiable financial data (earnings figures, P/E ratios, FCF, revenue growth, margins). The reasoning stands independently of the conclusion.
+- speculation: A bold prediction or opinion about a stock or market with little or no supporting evidence. May cite one surface-level stat but the argument collapses without the conclusion.
+- reaction: An immediate emotional response to a specific market event (earnings miss, Fed decision, price crash). Expresses a feeling in the moment, not an investment case.
+
+Post:
+{POST}
+
+Respond in this exact JSON format with no other text:
+{"label": "analysis", "confidence": 0.85, "reasoning": "One sentence explaining the key signal."}`;
+
+const BAR_COLORS = { analysis: '#639922', speculation: '#BA7517', reaction: '#185FA5' };
+
+function loadExample(type) {
+  document.getElementById('postInput').value = EXAMPLES[type];
+  document.getElementById('resultEl').style.display = 'none';
+  document.getElementById('errorEl').style.display = 'none';
+}
+
+function clearAll() {
+  document.getElementById('postInput').value = '';
+  document.getElementById('resultEl').style.display = 'none';
+  document.getElementById('errorEl').style.display = 'none';
+}
+
+async function classify() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const text = document.getElementById('postInput').value.trim();
+
+  if (!apiKey) {
+    showError('Please enter your Groq API key above. Get one free at console.groq.com');
+    return;
+  }
+  if (!text) {
+    showError('Please paste a post to classify.');
+    return;
+  }
+
+  const btn = document.getElementById('classifyBtn');
+  const loading = document.getElementById('loadingEl');
+  const errorEl = document.getElementById('errorEl');
+  const resultEl = document.getElementById('resultEl');
+
+  btn.disabled = true;
+  loading.style.display = 'flex';
+  errorEl.style.display = 'none';
+  resultEl.style.display = 'none';
+
+  try {
+    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify({
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a text classifier. Always respond with valid JSON only — no markdown, no backticks, no explanation outside the JSON object.'
+          },
+          {
+            role: 'user',
+            content: PROMPT.replace('{POST}', text.slice(0, 2000))
+          }
+        ],
+        temperature: 0,
+        max_tokens: 150
+      })
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.error?.message || `Groq API error ${response.status}`);
+    }
+
+    const data = await response.json();
+    const raw = data.choices?.[0]?.message?.content || '';
+    const clean = raw.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    const label = parsed.label?.toLowerCase();
+    if (!['analysis', 'speculation', 'reaction'].includes(label)) {
+      throw new Error(`Unexpected label returned: "${label}"`);
+    }
+
+    const conf = Math.min(1, Math.max(0, parseFloat(parsed.confidence) || 0.5));
+    const confPct = Math.round(conf * 100);
+    const reasoning = parsed.reasoning || '';
+
+    resultEl.innerHTML = `
+      <div class="result-header">
+        <span class="badge badge-${label}">${label}</span>
+        <div class="conf-wrap">
+          <div class="conf-label">Confidence</div>
+          <div style="display:flex;align-items:center;gap:8px;">
+            <div class="conf-bar-bg" style="flex:1;">
+              <div class="conf-bar-fill" style="width:${confPct}%;background:${BAR_COLORS[label]};"></div>
+            </div>
+            <span class="conf-val">${confPct}%</span>
+          </div>
+        </div>
+      </div>
+      ${reasoning ? `
+      <div class="reasoning">
+        <p class="reasoning-title">Key signal</p>
+        <p class="reasoning-text">${reasoning}</p>
+      </div>` : ''}
+    `;
+    resultEl.style.display = 'block';
+
+  } catch (err) {
+    showError(err.message || 'Classification failed. Check your API key and try again.');
+  } finally {
+    btn.disabled = false;
+    loading.style.display = 'none';
+  }
+}
+
+function showError(msg) {
+  const el = document.getElementById('errorEl');
+  el.textContent = msg;
+  el.style.display = 'block';
+}
+
+document.getElementById('postInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) classify();
+});
+</script>
+</body>
+</html>
